@@ -64,7 +64,7 @@ class Sodier(pygame.sprite.Sprite):
         self.flip = False
         self.img_ani = pygame.Surface((width, height))
         self.rect = self.img_ani.get_rect()
-
+        self.rect.center = (x,y)
         # self.image = pygame.transform.scale(img,(int(img.get_width()*scale),int(img.get_height()*scale)))
 
 
@@ -97,7 +97,7 @@ class Sodier(pygame.sprite.Sprite):
         self.rect.y += dy
 
 sprite_sheet_image = pygame.image.load('Idle-Sheet.png').convert_alpha()
-Player1 = Sodier(sprite_sheet_image, 64,80,500,500, 5)
+Player1 = Sodier(sprite_sheet_image, 64,80,500,500, 10)
 
 animation_list = []
 animation_step = 4
@@ -128,7 +128,7 @@ pygame.display.set_icon(icon)
 bgr = pygame.image.load('background2.jpg')
 background = pygame.transform.scale(bgr,(1280,720))
 
-
+f = 0
 # moving_sprite = pygame.sprite.Group()
 # Fire = fire(100,100)
 # moving_sprite.add(Fire)
@@ -147,8 +147,10 @@ while running:
             # Fire.animate()
             if event.key == pygame.K_a:
                 moving_left = True
+
             if event.key == pygame.K_d:
                 moving_right = True
+
             if event.key == pygame.K_ESCAPE:
                 running = False
         #keyboard button release
@@ -159,8 +161,7 @@ while running:
                 moving_right = False
     # fill the screen with a color to wipe away anything from last frame
     # screen.fill("black")
-    Player1.draw()
-    Player1.move(moving_left, moving_right)
+
     # RENDER YOUR GAME HERE
     screen.blit(background, (0, 0))
     current_time = pygame.time.get_ticks()
@@ -170,8 +171,9 @@ while running:
         if frame >= len(animation_list):
             frame = 0
     for x in range(animation_step):
-        screen.blit(animation_list[frame],(0,0))
-
+        screen.blit(animation_list[frame],Player1.rect)
+    Player1.draw()
+    Player1.move(moving_left, moving_right)
     pygame.display.update()
     # rect.x+=1
     # if rect.x == 800:
@@ -181,9 +183,7 @@ while running:
     # flip() the display to put your work on screen
     # moving_sprite.draw(screen)
     # moving_sprite.update()
-    pygame.display.flip()
+    # pygame.display.flip()
     clock.tick(60)  # limits FPS to 60
-    time = clock.get_time()
-
 pygame.quit()
 #commit test
