@@ -1,48 +1,83 @@
+from turtledemo.forest import doit1
 import pygame, sys
 from pygame.locals import *
 import random
 
+
 # Constants
 WINDOW_WIDTH = 400
 WINDOW_HEIGHT = 400
+BLOCK_SIZE = 40
 WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GROUND_HEIGHT = 100
+GROUND_HEIGHT = 50
 
 pygame.init()
 
-# Ground setup
-setGround = pygame.Rect((0, WINDOW_HEIGHT - GROUND_HEIGHT, WINDOW_WIDTH, GROUND_HEIGHT))
+# Screen setup
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption('Stacking Blocks')
 
-# Block class
-class Block():
-    def __init__(self, x, y, width, height, color):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.color = color
-        self.fall_speed = random.randint(1, 3)  # Random fall speed
-
-    def fall(self):
-        if self.rect.bottom < WINDOW_HEIGHT - GROUND_HEIGHT:
-            self.rect.y += self.fall_speed
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
 
 ### FPS ###
 FPS = 60
 fpsClock = pygame.time.Clock()
+last_time = pygame.time.get_ticks()
 
-# Screen setup
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption('Test Game')
 
-# Create blocks with independent properties
-Block_List = [
-    Block(0, 0, 40, 40, RED),
-    Block(50, 0, 40, 40, RED),
-    Block(100, 0, 40, 40, RED),
-    Block(150, 20, 40, 40, RED)
-]
+# Load block image
+block_image = pygame.image.load('block.jpg')
+block_image = pygame.transform.scale(block_image, (BLOCK_SIZE, BLOCK_SIZE))
+
+# Ground setup
+setGround = pygame.Rect((0, WINDOW_HEIGHT - GROUND_HEIGHT, WINDOW_WIDTH, GROUND_HEIGHT))
+# limit max col
+max_col = [0]*(WINDOW_WIDTH // BLOCK_SIZE)
+
+# Block class
+class Block(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()  # Call the parent class (Sprite) constructor
+        self.image = block_image  # Assign the image to the sprite
+        self.rect = self.image.get_rect()  # Get the rect for positioning
+        self.rect.topleft = (x, y)  # Set the initial position
+        self.fall_speed = 2  # Fall speed
+
+
+    def update(self, blocklist):
+        if self.rect.bottom < WINDOW_HEIGHT - GROUND_HEIGHT:
+            self.rect.y += self.fall_speed
+        for other_block in blocklist:
+            if other_block != self and self.rect.colliderect(other_block.rect):
+                self.rect.y = other_block.rect.top - self.rect.height
+                break
+
+
+# Function to check and clear full rows
+def check_and_clear_rows(block_group):
+    rows = []
+
+    # Tạo dictionary để đếm số lượng block trên mỗi hàng
+    for block in block_group:
+        last_row = WINDOW_HEIGHT - GROUND_HEIGHT - BLOCK_SIZE
+        row = block.rect.y
+        if row == last_row:
+            rows.append(block)
+
+    # Kiểm tra xem hàng nào đã được lấp đầy
+    if len(rows) >= WINDOW_WIDTH // BLOCK_SIZE:
+            # Xóa các block trên hàng này
+            for block in rows:
+                block_group.remove(block)
+            # Cập nhật lại số cột tối đa
+            for i in range(len(max_col)):
+                max_col[i] -= 1
+
+
+
+
+
+# Sprite group
+block_group = pygame.sprite.Group()
 
 # Main game loop
 while True:
@@ -54,13 +89,31 @@ while True:
     # Fill screen with white
     screen.fill(WHITE)
 
+    current_time = pygame.time.get_ticks()
+    if current_time - last_time > 1000:
+        while True:
+            rand = random.randint(0, WINDOW_WIDTH // BLOCK_SIZE - 1)
+            if max_col[rand] <= 2:
+                max_col[rand] += 1
+                break
+
+
+        block = Block(rand * BLOCK_SIZE, -20)
+        block_group.add(block)
+        last_time = current_time
+
+    # Update all sprites in the group
+    block_group.update(block_group)
+
+    # Kiểm tra và xóa hàng đã được lấp đầy
+
+    check_and_clear_rows(block_group)
+
+    # Draw all sprites in the group
+    block_group.draw(screen)
+
     # Draw the ground
     GROUND = pygame.draw.rect(screen, '#571e15', setGround)
-
-    # Update and draw each block independently
-    for block in Block_List:
-        block.fall()
-        block.draw(screen)
 
     pygame.display.update()
     fpsClock.tick(FPS)
